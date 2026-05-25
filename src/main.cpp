@@ -3,7 +3,7 @@
  *  Descrição: Neste modulo de publish nos coletamos os hex do controle remoto e fizemos com que toda vez que apertasse o botao ele emitsse para a tela oq o hex faz.
  *  Projeto: Modulo de publicar os comandos feito na tela retratil
  *  Data: 21/05
- *  Versão: 0.0.1
+ *  Versão: 0.0.2
  */
 
 #include <Arduino.h>
@@ -12,6 +12,7 @@
 #include "DebugManager.h"
 #include <ArduinoJson.h>
 #include <secrets.h>
+#include <Bounce2.h>
 //=========================
 //* PINOS
 /*
@@ -21,23 +22,30 @@
 
 //=========================
 //* Variaveis globais
-/*
-    COLOCAR AS VARIAVIES GLOBAIS AQUI
-*/
+
+String hexUP = "codigo do hexUP";
+String hexDOWN = "codigo do hexDOWN";
+String hexSELECT = "codigo do hexSELECT";
+
+
+
 //=========================
 
 //=========================
 //* CRIAÇÃO DE OBJETOS 
-/*
-    COLOCAR OS OBJETOS AQUI
-*/
+  
+Bounce UP = Bounce();
+Bounce DOWN = Bounce();
+Bounce SELECT = Bounce();
 //=========================
 
 //=========================
 //* INVOCAR AS FUNÇÕES
-/*
-    INVOCAR AS FUNÇõES AQUI
-*/
+ 
+bool botaoUP();
+bool botaoDOWN();
+bool botaoSELECT();
+
 //=========================
 
 
@@ -62,16 +70,32 @@ void loop()
   garantirWiFiConectado();
   garantirMQTTConectado();
   loopMQTT();
+
+  if(UP.fell())
+  {
+    botaoUP();
+  }
 }
 
-void postarJson()
+bool botaoUP()
+{ 
+  if(hexUP == "")
+    debugErro("O código do hex está errado, favor checar se esta correto");
+ 
+
+if(hexUP)
 {
-  
+  debugInfo("Tela retrátil subindo");
+  //TODO VER QUANTO TEMPO ELA DEMORA PRA SUBIR POR COMPLETO E FAZER UM CRONOMETTRO Q QUANDO ELA SUBIR TUDO VAI EXIVIR
+  //TODO FAZER UMA VARIAVEL DE PAUSE Q SALVA AONDE O MILLIS PAROU POIS QND ELE APERTAR O PAUSE O MILLIS NAO PODE CONTINUAR ANDANDO 
+  if(millis() - 0 >= 5000 ) // trocar esse 5000 dps
+  debugInfo("Tela retrátil subiu por completo.");
 
-  // esse eh a ultima parte pra enviar ou seja tem q codar a cima 
-  // se ficar com duvida ve o projeto do esp 1
+
   String texto;
-  serializeJson(doc, texto);
-  publicarMensagem(TOPICO_COMANDO, texto.c_str());
-}
+  serializeJson(doc, texto);  
+  publicarMensagem(TOPICO_COMANDO, texto.c_str()); // ver como faz pra trocar o topico_comando pelo topico_publicar
 
+
+}
+}
