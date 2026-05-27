@@ -3,7 +3,7 @@
  *  Descrição: Neste modulo de publish nos coletamos os hex do controle remoto e fizemos com que toda vez que apertasse o botao ele emitsse para a tela oq o hex faz.
  *  Projeto: Modulo de publicar os comandos feito na tela retratil
  *  Data: 21/05
- *  Versão: 0.0.4
+ *  Versão: 0.0.5
  */
 
 #include <Arduino.h>
@@ -15,17 +15,19 @@
 #include <Bounce2.h>
 //=========================
 //* PINOS
-/*
-    COLOCAR OS PINOS AQUI
-*/
+
+const int pinUp = 2;
+const int pinDown = 3;
+const int pinPause = 4;
+
 //=========================
 
 //=========================
 //* Variaveis globais
 
-String frequenciaUP = "frequenciaUP";
-String frequenciaDOWN = "frequenciaDOWN";
-String frequenciaPAUSE = "frequenciaPAUSE";
+String frequenciaUp = "frequenciaUP";
+String frequenciaDown = "frequenciaDOWN";
+String frequenciaPause = "frequenciaPAUSE";
 
 const unsigned long tempoInicio = 0;
 unsigned long tempo = 0;
@@ -40,15 +42,15 @@ bool tempoParado = false;
 
 Bounce UP = Bounce();
 Bounce DOWN = Bounce();
-Bounce SELECT = Bounce();
+Bounce PAUSE = Bounce();
 //=========================
 
 //=========================
 //* INVOCAR AS FUNÇÕES
 
-void botaoUP();
-void botaoDOWN();
-void botaoSELECT();
+void botaoUp();
+void botaoDown();
+void botaoPause();
 
 //=========================
 
@@ -56,9 +58,9 @@ void setup()
 {
   //=========================
   //* pinMODE
-  /*
-    COLOCAR OS pinMode AQUI
-  */
+  pinMode(pinUp, INPUT_PULLUP);
+  pinMode(pinDown, INPUT_PULLUP); 
+  pinMode(pinPause, INPUT_PULLUP);
   //=========================
 
   configurarDebug();
@@ -75,23 +77,30 @@ void loop()
 
   if (UP.fell())
   {
-    botaoUP();
+    botaoUp();
   }
+  if (DOWN.fell())
+  {
+    botaoDown();
+  }
+  if (PAUSE.fell())
+  {
+    botaoPause();
+  }
+  
 }
 
 
 /*
   A ideia é que o botaoUP e down tenha a mesma logica pois ambos tem a mesma função, só que um sobe e o outro desce, e o botaoPAUSE tem a função de pausar o tempo, ou seja, quando ele for apertado ele salva o tempo decorrido e para de contar, e quando ele for apertado novamente ele continua contando de onde parou.
 */
-void botaoUP()
+void botaoUp()
 {
-  if (frequenciaUP == "")
+  if (frequenciaUp == "")
     debugErro("A frequência do botão UP está errada, favor checar se está correta");
 
-  if (frequenciaUP == "frequencia do botão UP")
+  if (frequenciaUp == "frequencia do botão UP")
   {
-    // TODO VER QUANTO TEMPO ELA DEMORA PRA SUBIR POR COMPLETO E FAZER UM CRONOMETTRO Q QUANDO ELA SUBIR TUDO VAI EXIVIR
-    // TODO FAZER UMA VARIAVEL DE PAUSE Q SALVA AONDE O MILLIS PAROU POIS QND ELE APERTAR O PAUSE O MILLIS NAO PODE CONTINUAR ANDANDO
     if (tempoParado)
     {
       debugInfo("Tela retrátil subindo");
@@ -99,8 +108,7 @@ void botaoUP()
       tempoParado = false;
 
       // Serial para debug
-    debugInfo("Tempo decorrido: " + String(tempoDecorrido));
-    debugInfo(" ms");
+    debugInfo("Tempo decorrido: " + String(tempoDecorrido) + " ms");
     }
     tempoDecorrido = millis() - tempo;
 
@@ -111,28 +119,31 @@ void botaoUP()
       tempoParado = false;
     }
   }
+  //TODO: PUBLICAR O JSON DO BOTAO UP NO MQTT
+
 }
 
 void botaoPause()
 {
-  if (frequenciaPAUSE == "")
+  if (frequenciaPause == "")
     debugErro("A frequência do botão Pause está errada, favor checar se está correta");
 
-  if (frequenciaPAUSE == "frequencia do botão PAUSE")
+  if (frequenciaPause == "frequencia do botão PAUSE")
   {
     debugInfo("Tela retrátil pausada");
     tempoParado = true;
     tempoPause = tempoDecorrido;
 
   }
+  //TODO: PUBLICAR O JSON DO BOTAO PAUSE NO MQTT
 }
 
-void botaoDOWN()
+void botaoDown()
 {
-  if (frequenciaDOWN == "")
+  if (frequenciaDown == "")
     debugErro("A frequência do botão DOWN está errada, favor checar se está correta");
 
-  if (frequenciaDOWN == "frequencia do botão DOWN")
+  if (frequenciaDown == "frequencia do botão DOWN")
   {
     if (tempoParado)
     {
@@ -152,4 +163,5 @@ void botaoDOWN()
       tempoParado = false;
     }
   }
+  //TODO: PUBLICAR O JSON DO BOTAO DOWN NO MQTT
 }

@@ -17,8 +17,6 @@ extern const bool USAR_AWS_IOT;
 extern const char* MQTT_BROKER;
 extern const int MQTT_PORTA;
 
-extern const char* URL_API;
-
 // o ID do mqtt sempre vai ser diferente
 // nunca criar um id igual de alguem pois ele nao permite e fica desconectando um
 extern const char* MQTT_CLIENT_ID;
@@ -33,6 +31,15 @@ extern const bool MQTT_USAR_TLS;
 extern const  char MQTT_CERTIFICADO_CA[];
 extern const char* TOPICOS_PUBLICAR[];
 
+// * AWS
+
+extern const char AWS_CERT_CA[];
+extern const char AWS_CERT_CRT[];
+extern const char AWS_CERT_PRIVATE[];
+extern const char* AWS_IOT_ENDPOINT;
+extern const int AWS_IOT_PORT;
+extern const char* AWS_IOT_CLIENT_ID;
+
 
 
 extern const int TOTAL_TOPICOS_PUBLICAR;
@@ -41,8 +48,6 @@ extern const int TOTAL_TOPICOS_PUBLICAR;
 extern const char* TOPICOS_RECEBER[];
 
 extern const int TOTAL_TOPICOS_RECEBER;
-
-extern const char TOPICO_COMANDO[];
 
 //======================================
 // *DEBUG
