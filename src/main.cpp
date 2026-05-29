@@ -1,9 +1,9 @@
-/** 
+/**
  *   Nome: Pedro Leonel de Lorena, Leonardo Ferrarese Correa, Lais Rodrigues Sevilhano & Luigi Arnosti Reginato
  *  Descrição: Neste modulo de publish nos coletamos os hex do controle remoto e fizemos com que toda vez que apertasse o botao ele emitsse para a tela oq o hex faz.
  *  Projeto: Modulo de publicar os comandos feito na tela retratil
  *  Data: 21/05
- *  Versão: 0.0.6
+ *  Versão: 0.0.7
  */
 
 #include <Arduino.h>
@@ -13,21 +13,10 @@
 #include <ArduinoJson.h>
 #include <secrets.h>
 #include <Bounce2.h>
-//=========================
-//* PINOS
-
-const int pinUp = 2;
-const int pinDown = 3;
-const int pinPause = 4;
-
-//=========================
+#include <TelaProjecaoRF.h>
 
 //=========================
 //* Variaveis globais
-
-unsigned long frequenciaUp = 433;
-unsigned long frequenciaDown = 432;
-unsigned long frequenciaPause = 431;
 
 const unsigned long tempoInicio = 0;
 unsigned long tempo = 0;
@@ -36,43 +25,53 @@ unsigned long tempoPause;
 unsigned long tempoMaximo = 20000;
 bool tempoParado = false;
 
+bool UP = false;
+bool DOWN = false;
+bool PAUSE = false;
+
 const char topicoComandoUp[] = "senai134/publisherTelaRetratil/esp32/comando";
+
+const uint8_t ENDERECO_DA_MINHA_TELA[TelaProjecaoRF::TAMANHO_ENDERECO] = {
+    0xCD, 0x4E, 0x0A, 0x01, 0x00};
+
+const uint8_t PINO_TX = 7;
+const uint8_t PINO_RX = 6;
+
 //=========================
 
 //=========================
 //* CRIAÇÃO DE OBJETOS
 
-Bounce UP = Bounce();
-Bounce DOWN = Bounce();
-Bounce PAUSE = Bounce();
+Bounce BOTAOUP = Bounce();
+Bounce BOTAODOWN = Bounce();
+Bounce BOTAOPAUSE = Bounce();
+
+TelaProjecaoRF telaRF(PINO_TX, PINO_RX);
 //=========================
 
 //=========================
 //* INVOCAR AS FUNÇÕES
 
-void botaoUp();
-void botaoDown();
-void botaoPause();
 void postarComando();
 
 //=========================
 
 void setup()
 {
-  //=========================
-  //* pinMODE
- // UP.attach(pinUp, INPUT_PULLUP);
- // DOWN.attach(pinDown, INPUT_PULLUP);
-  //PAUSE.attach(pinPause, INPUT_PULLUP);
-  pinMode(pinUp, INPUT_PULLUP);
-  pinMode(pinDown, INPUT_PULLUP);
-  pinMode(pinPause, INPUT_PULLUP);
-  //=========================
-
   configurarDebug();
   conectarWiFi();
   configurarMQTT();
   conectarMQTT();
+  registrarCallbackMensagem(tratarMensagemRecebida);
+
+  Serial.begin(9600);
+  delay(500);
+
+  telaRF.begin(&Serial);
+  telaRF.setInverterSinal(true); // Altere para false se a tela não responder
+                                 // Temporário -->
+  Serial.println("TelaProjecaoRF — Controle via Serial");
+  Serial.println("Comandos: c=CIMA  p=PARAR  b=BAIXO  l=LEARN\n");
 }
 
 void loop()
@@ -81,93 +80,64 @@ void loop()
   garantirMQTTConectado();
   loopMQTT();
 
-  UP.update();
-  DOWN.update();
-  PAUSE.update();
-
-  //TODO: TROCAR OS IFS DO BOTAO PARA OQ VAI VIM DO OUTRO JSON POIS ELE VAI FALAR SE FOI PRESSIONADO OU NAO.
-  if (UP.fell())
-  {
-    botaoUp();
-  }
-  if (DOWN.fell())
-  {
-    botaoDown();
-  }
-  if (PAUSE.fell())
-  {
-    botaoPause();
-
-  }
-  
+  telaRF.update();
+  /////////////////////////////////
 }
-
 
 /*
   A ideia é que o botaoUP e down tenha a mesma logica pois ambos tem a mesma função, só que um sobe e o outro desce, e o botaoPAUSE tem a função de pausar o tempo, ou seja, quando ele for apertado ele salva o tempo decorrido e para de contar, e quando ele for apertado novamente ele continua contando de onde parou.
 */
-void botaoUp()
+
+void enviarRF()
 {
-  if (frequenciaUp != 433)
-    debugErro("A frequência do botão UP está errada, favor checar se está correta");
-
-  if (frequenciaUp == 433)
+  if (UP)
   {
-    if (tempoParado)
-    {
-      debugInfo("Tela retrátil subindo");
-      tempo = millis() - tempoPause;
-      tempoParado = false;
-      // Serial para debug
-    debugInfo("Tempo decorrido: " + String(tempoDecorrido) + " ms");
-    }
-    tempoDecorrido = millis() - tempo;
+    Serial.println(">> Subindo tela...");
+    telaRF.enviarCima(ENDERECO_DA_MINHA_TELA);
+    UP = false;
+  }
 
-    if (tempoDecorrido >= tempoMaximo)
-    {
-      debugInfo("Tela retrátil subiu por completo.");
-      tempoDecorrido = 0;
-      tempoParado = false;
-    }
+  if (DOWN)
+  {
+    Serial.println(">> Baixando tela...");
+    telaRF.enviarBaixo(ENDERECO_DA_MINHA_TELA);
+    DOWN = false;
+  }
+
+  if (PAUSE)
+  {
+    Serial.println(">> Parando tela...");
+    telaRF.enviarParar(ENDERECO_DA_MINHA_TELA);
+    PAUSE = false;
   }
 }
 
-void botaoPause()
+void tratarJsonComando(const String &mensagem)
 {
-  if (frequenciaPause != 431)
-    debugErro("A frequência do botão Pause está errada, favor checar se está correta");
+  JsonDocument doc;
 
-  if (frequenciaPause == 431)
+  DeserializationError erro = deserializeJson(doc, mensagem);
+
+  if (erro)
   {
-    debugInfo("Tela retrátil pausada");
-    tempoParado = true;
-    tempoPause = tempoDecorrido;
+    debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
+    return;
   }
-}
 
-void botaoDown()
-{
-  if (frequenciaDown != 432)
-    debugErro("A frequência do botão DOWN está errada, favor checar se está correta");
-
-  if (frequenciaDown == 432)
+  if (doc["telaRetratil"].is<JsonObject>())
   {
-    if (tempoParado)
-    {
-      debugInfo("Tela retrátil descendo");
-      tempo = millis() - tempoPause;
-      tempoParado = false;
+    if (doc["telaRetratil"]["UP"].is<bool>())
+      UP = doc["telaRetratil"]["UP"].as<bool>();
 
-       // Serial para debug
-    debugInfo("PAUSADO em: " + String(tempoPause) + " ms");
-    }
-    tempoDecorrido = millis() - tempo;
+    if (doc["telaRetratil"]["DOWN"].is<bool>())
+      DOWN = doc["telaRetratil"]["DOWN"].as<bool>();
 
-    if (tempoDecorrido >= tempoMaximo)
-    {
-      debugInfo("Tela retrátil desceu por completo.");
-      tempoDecorrido = 0;
-      tempoParado = false;
-    }
+    if (doc["telaRetratil"]["PAUSE"].is<bool>())
+      PAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
   }
+  Serial.println(UP);
+  Serial.println(DOWN);
+  Serial.println(PAUSE);
+
+  enviarRF();
 }
