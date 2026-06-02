@@ -199,6 +199,7 @@ void enviarRF()
       if (doc["telaRetratil"]["tela"].is<int8_t>())
       {
         Tela = doc["telaRetratil"]["tela"].as<int8_t>();
+        Serial.println("Tela selecionada: " + String(Tela));
       }
     }
     Serial.println(SendUP);
