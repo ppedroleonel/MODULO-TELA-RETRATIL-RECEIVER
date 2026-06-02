@@ -3,7 +3,7 @@
  *  Descrição: Neste modulo de publish nos coletamos os hex do controle remoto e fizemos com que toda vez que apertasse o botao ele emitsse para a tela oq o hex faz.
  *  Projeto: Modulo de publicar os comandos feito na tela retratil
  *  Data: 01/06/2026
- *  Versão: 1.0.1
+ *  Versão: 1.0.2
  *  */
 
 #include <Arduino.h>
@@ -26,7 +26,7 @@ unsigned long tempoPause;
 unsigned long tempoMaximo = 20000;
 bool tempoParado = false;
 
-char Tela = 0;
+int8_t Tela = 0;
 
 bool SendUP = false;
 bool SendDOWN = false;
@@ -196,9 +196,9 @@ void enviarRF()
       {
         SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
       }
-      if (doc["telaRetratil"]["tela"].is<char>())
+      if (doc["telaRetratil"]["tela"].is<int8_t>())
       {
-        Tela = doc["telaRetratil"]["tela"].as<char>();
+        Tela = doc["telaRetratil"]["tela"].as<int8_t>();
       }
     }
     Serial.println(SendUP);
