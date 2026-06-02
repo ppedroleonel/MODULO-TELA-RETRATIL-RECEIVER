@@ -3,8 +3,8 @@
  *  Descrição: Neste modulo de publish nos coletamos os hex do controle remoto e fizemos com que toda vez que apertasse o botao ele emitsse para a tela oq o hex faz.
  *  Projeto: Modulo de publicar os comandos feito na tela retratil
  *  Data: 01/06/2026
- *  Versão: 1.0.0
- */
+ *  Versão: 1.0.1
+ *  */
 
 #include <Arduino.h>
 #include "WiFiManager.h"
@@ -26,14 +26,18 @@ unsigned long tempoPause;
 unsigned long tempoMaximo = 20000;
 bool tempoParado = false;
 
+char Tela = 0;
+
 bool SendUP = false;
 bool SendDOWN = false;
 bool SendPAUSE = false;
 
 const char topicoComandoUp[] = "senai134/publisherTelaRetratil/esp32/comando";
 
-const uint8_t ENDERECO_DA_MINHA_TELA[TelaProjecaoRF::TAMANHO_ENDERECO] = {
+const uint8_t ENDERECO_TELA_0[TelaProjecaoRF::TAMANHO_ENDERECO] = {
     0xCD, 0x4E, 0x0A, 0x01, 0x00};
+const uint8_t ENDERECO_TELA_1[TelaProjecaoRF::TAMANHO_ENDERECO] = {
+    0xCD, 0x4B, 0xF6, 0x01, 0x00};
 
 const uint8_t PINO_TX = 7;
 const uint8_t PINO_RX = 6;
@@ -67,7 +71,7 @@ void setup()
   registrarCallBackMensagem(tratarMensagemRecebida);
 
   Serial.begin(9600);
-     // delay(500);
+  // delay(500);
 
   telaRF.begin(&Serial);
   telaRF.setInverterSinal(true); // Altere para false se a tela não responder
@@ -92,81 +96,114 @@ void loop()
 
 void enviarRF()
 {
-  if (SendUP)
+  if (Tela == 0)
   {
-    Serial.println(">> Subindo tela...");
-    telaRF.enviarCima(ENDERECO_DA_MINHA_TELA);
-    SendUP = false;
-  }
+    if (SendUP)
+    {
+      Serial.println(">> Subindo tela... 0");
+      telaRF.enviarCima(ENDERECO_TELA_0);
+      SendUP = false;
+    }
 
-  if (SendDOWN)
-  {
-    Serial.println(">> Baixando tela...");
-    telaRF.enviarBaixo(ENDERECO_DA_MINHA_TELA);
-   SendDOWN = false;
-  }
+    if (SendDOWN)
+    {
+      Serial.println(">> Baixando tela... 0");
+      telaRF.enviarBaixo(ENDERECO_TELA_0);
+      SendDOWN = false;
+    }
 
-  if (SendPAUSE)
+    if (SendPAUSE)
+    {
+      Serial.println(">> Parando tela... 0");
+      telaRF.enviarParar(ENDERECO_TELA_0);
+      SendPAUSE = false;
+    }
+  }
+  else if (Tela == 1)
   {
-    Serial.println(">> Parando tela...");
-    telaRF.enviarParar(ENDERECO_DA_MINHA_TELA);
-    SendPAUSE = false;
+
+    if (SendUP)
+    {
+      Serial.println(">> Subindo tela... 1");
+      telaRF.enviarCima(ENDERECO_TELA_1);
+      SendUP = false;
+    }
+
+    if (SendDOWN)
+    {
+      Serial.println(">> Baixando tela... 1");
+      telaRF.enviarBaixo(ENDERECO_TELA_1);
+      SendDOWN = false;
+    }
+
+    if (SendPAUSE)
+    {
+      Serial.println(">> Parando tela... 1");
+      telaRF.enviarParar(ENDERECO_TELA_1);
+      SendPAUSE = false;
+    }
   }
 }
 
-void tratarMensagemRecebida(const char *topico, const String &mensagem)
-{
-  debugInfo("==================================");
-  debugInfo("Mensagem recebida na aplicação");
-  debugInfo("==================================");
-
-  if (topico == nullptr)
+  void tratarMensagemRecebida(const char *topico, const String &mensagem)
   {
-    debugErro("Tópico MQTT inválido");
-    return;
-  }
+    debugInfo("==================================");
+    debugInfo("Mensagem recebida na aplicação");
+    debugInfo("==================================");
 
-  debugInfo("Tópico: " + String(topico));
-  debugInfo("Mensagem " + mensagem);
-
-  debugInfo(String(strcmp(topico, TOPICO_COMANDO)));
-
-  if (strcmp(topico, TOPICO_COMANDO) == 0)
-  {
-    tratarJsonComando(mensagem);
-    return;
-  }
-
-  debugErro("Tópico näo tratado: " + String(topico));
-}
-
-void tratarJsonComando(const String &mensagem)
-{
-  JsonDocument doc;
-
-  DeserializationError erro = deserializeJson(doc, mensagem);
-
-  if (erro)
-  {
-    debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
-    return;
-  }
-
-  if (doc["telaRetratil"].is<JsonObject>())
-  {
-    if (doc["telaRetratil"]["UP"].is<bool>()){
-      SendUP = doc["telaRetratil"]["UP"].as<bool>();
+    if (topico == nullptr)
+    {
+      debugErro("Tópico MQTT inválido");
+      return;
     }
-    if (doc["telaRetratil"]["DOWN"].is<bool>()){
-      SendDOWN = doc["telaRetratil"]["DOWN"].as<bool>();
-    }
-    if (doc["telaRetratil"]["PAUSE"].is<bool>()){
-      SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
-    }
-  }
-  Serial.println(SendUP);
-  Serial.println(SendDOWN);
-  Serial.println(SendPAUSE);
 
-  enviarRF();
-}
+    debugInfo("Tópico: " + String(topico));
+    debugInfo("Mensagem " + mensagem);
+
+    debugInfo(String(strcmp(topico, TOPICO_COMANDO)));
+
+    if (strcmp(topico, TOPICO_COMANDO) == 0)
+    {
+      tratarJsonComando(mensagem);
+      return;
+    }
+
+    debugErro("Tópico näo tratado: " + String(topico));
+  }
+  void tratarJsonComando(const String &mensagem)
+  {
+    JsonDocument doc;
+
+    DeserializationError erro = deserializeJson(doc, mensagem);
+
+    if (erro)
+    {
+      debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
+      return;
+    }
+
+    if (doc["telaRetratil"].is<JsonObject>())
+    {
+      if (doc["telaRetratil"]["UP"].is<bool>())
+      {
+        SendUP = doc["telaRetratil"]["UP"].as<bool>();
+      }
+      if (doc["telaRetratil"]["DOWN"].is<bool>())
+      {
+        SendDOWN = doc["telaRetratil"]["DOWN"].as<bool>();
+      }
+      if (doc["telaRetratil"]["PAUSE"].is<bool>())
+      {
+        SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
+      }
+      if (doc["telaRetratil"]["tela"].is<char>())
+      {
+        Tela = doc["telaRetratil"]["tela"].as<char>();
+      }
+    }
+    Serial.println(SendUP);
+    Serial.println(SendDOWN);
+    Serial.println(SendPAUSE);
+
+    enviarRF();
+  }
