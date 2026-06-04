@@ -7,204 +7,35 @@
  *  */
 
 #include <Arduino.h>
-#include "WiFiManager.h"
-#include "MqttManager.h"
-#include "DebugManager.h"
+#include <ESP32Connectivity.h>
+#include <Conectividade.h>
+#include <DebugManager.h>
 #include <ArduinoJson.h>
 #include <secrets.h>
 #include <Bounce2.h>
 #include <TelaProjecaoRF.h>
+#include "tratarJsonComando.h"
+#include "callbackManager.h"
 
-//=========================
-//* Variaveis globais
+ESP32Connectivity conexao;
 
-const char TOPICO_COMANDO[] = "senai134/publisherTelaRetratil/esp32/comando";
-const unsigned long tempoInicio = 0;
-unsigned long tempo = 0;
-unsigned long tempoDecorrido = 0;
-unsigned long tempoPause;
-unsigned long tempoMaximo = 20000;
-bool tempoParado = false;
-
-int8_t Tela = 0;
-
-bool SendUP = false;
-bool SendDOWN = false;
-bool SendPAUSE = false;
-
-const char topicoComandoUp[] = "senai134/publisherTelaRetratil/esp32/comando";
-
-const uint8_t ENDERECO_TELA_0[TelaProjecaoRF::TAMANHO_ENDERECO] = {
-    0xCD, 0x4E, 0x0A, 0x01, 0x00};
-const uint8_t ENDERECO_TELA_1[TelaProjecaoRF::TAMANHO_ENDERECO] = {
-    0xCD, 0x4B, 0xF6, 0x01, 0x00};
-
-const uint8_t PINO_TX = 7;
-const uint8_t PINO_RX = 6;
-
-//=========================
-
-//=========================
-//* CRIAÇÃO DE OBJETOS
-
-Bounce BOTAOUP = Bounce();
-Bounce BOTAODOWN = Bounce();
-Bounce BOTAOPAUSE = Bounce();
-
-TelaProjecaoRF telaRF(PINO_TX, PINO_RX);
-//=========================
-
-//=========================
-//* INVOCAR AS FUNÇÕES
-
-void postarComando();
-void tratarJsonComando(const String &mensagem);
-void tratarMensagemRecebida(const char *topico, const String &mensagem);
-//=========================
-
+// Inicializa a conexão Wi-Fi e MQTT, registra callbacks para eventos de conectividade,
+// e inicia o módulo RF para captura de comandos do controle remoto
 void setup()
 {
-  configurarDebug();
-  conectarWiFi();
-  configurarMQTT();
-  conectarMQTT();
-  registrarCallBackMensagem(tratarMensagemRecebida);
-
-  Serial.begin(9600);
-  // delay(500);
-
-  telaRF.begin(&Serial);
-  telaRF.setInverterSinal(true); // Altere para false se a tela não responder
-                                 // Temporário -->
-  Serial.println("TelaProjecaoRF — Controle via Serial");
-  Serial.println("Comandos: c=CIMA  p=PARAR  b=BAIXO  l=LEARN\n");
+  Serial.begin(115200);
+  configurarDebug(DEBUG_NIVEL_INICIAL, PINO_HABILITAR_DEBUG_COMPLETO);
+  conexao.beginAWS(wifiConfig, awsConfig, topicosConfig);
+  conexao.registrarCallbackWiFiConectado(aoConectarWiFi);
+  conexao.registrarCallbackWiFiDesconectado(aoDesconectarWiFi);
+  conexao.registrarCallbackMQTTConectado(aoConectarMQTT);
+  conexao.registrarCallbackMQTTDesconectado(aoDesconectarMQTT);
+  conexao.registrarCallbackMensagem(tratarMensagemRecebida);
+  inicializarRF();
 }
 
 void loop()
 {
-  garantirWiFiConectado();
-  garantirMQTTConectado();
-  loopMQTT();
-
-  telaRF.update();
-  /////////////////////////////////
+  conexao.update();
+  updateRF();
 }
-
-/*
-  A ideia é que o botaoUP e down tenha a mesma logica pois ambos tem a mesma função, só que um sobe e o outro desce, e o botaoPAUSE tem a função de pausar o tempo, ou seja, quando ele for apertado ele salva o tempo decorrido e para de contar, e quando ele for apertado novamente ele continua contando de onde parou.
-*/
-
-void enviarRF()
-{
-  if (Tela == 0)
-  {
-    if (SendUP)
-    {
-      Serial.println(">> Subindo tela... 0");
-      telaRF.enviarCima(ENDERECO_TELA_0);
-      SendUP = false;
-    }
-
-    if (SendDOWN)
-    {
-      Serial.println(">> Baixando tela... 0");
-      telaRF.enviarBaixo(ENDERECO_TELA_0);
-      SendDOWN = false;
-    }
-
-    if (SendPAUSE)
-    {
-      Serial.println(">> Parando tela... 0");
-      telaRF.enviarParar(ENDERECO_TELA_0);
-      SendPAUSE = false;
-    }
-  }
-  else if (Tela == 1)
-  {
-
-    if (SendUP)
-    {
-      Serial.println(">> Subindo tela... 1");
-      telaRF.enviarCima(ENDERECO_TELA_1);
-      SendUP = false;
-    }
-
-    if (SendDOWN)
-    {
-      Serial.println(">> Baixando tela... 1");
-      telaRF.enviarBaixo(ENDERECO_TELA_1);
-      SendDOWN = false;
-    }
-
-    if (SendPAUSE)
-    {
-      Serial.println(">> Parando tela... 1");
-      telaRF.enviarParar(ENDERECO_TELA_1);
-      SendPAUSE = false;
-    }
-  }
-}
-
-  void tratarMensagemRecebida(const char *topico, const String &mensagem)
-  {
-    debugInfo("==================================");
-    debugInfo("Mensagem recebida na aplicação");
-    debugInfo("==================================");
-
-    if (topico == nullptr)
-    {
-      debugErro("Tópico MQTT inválido");
-      return;
-    }
-
-    debugInfo("Tópico: " + String(topico));
-    debugInfo("Mensagem " + mensagem);
-
-    debugInfo(String(strcmp(topico, TOPICO_COMANDO)));
-
-    if (strcmp(topico, TOPICO_COMANDO) == 0)
-    {
-      tratarJsonComando(mensagem);
-      return;
-    }
-
-    debugErro("Tópico näo tratado: " + String(topico));
-  }
-  void tratarJsonComando(const String &mensagem)
-  {
-    JsonDocument doc;
-
-    DeserializationError erro = deserializeJson(doc, mensagem);
-
-    if (erro)
-    {
-      debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
-      return;
-    }
-
-    if (doc["telaRetratil"].is<JsonObject>())
-    {
-      if (doc["telaRetratil"]["UP"].is<bool>())
-      {
-        SendUP = doc["telaRetratil"]["UP"].as<bool>();
-      }
-      if (doc["telaRetratil"]["DOWN"].is<bool>())
-      {
-        SendDOWN = doc["telaRetratil"]["DOWN"].as<bool>();
-      }
-      if (doc["telaRetratil"]["PAUSE"].is<bool>())
-      {
-        SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
-      }
-      if (doc["telaRetratil"]["tela"].is<int8_t>())
-      {
-        Tela = doc["telaRetratil"]["tela"].as<int8_t>();
-        Serial.println("Tela selecionada: " + String(Tela));
-      }
-    }
-    Serial.println(SendUP);
-    Serial.println(SendDOWN);
-    Serial.println(SendPAUSE);
-
-    enviarRF();
-  }
