@@ -10,7 +10,7 @@
 #include <TelaProjecaoRF.h>
 #include "secrets.h"
 
-// Flags de controle: indicam qual comando de movimento deve ser enviado para a tela
+// Variáveis de controle: indicam qual comando de movimento deve ser enviado para a tela
 static bool SendUP = false;      // True = enviar comando para subir tela
 static bool SendDOWN = false;    // True = enviar comando para baixar tela
 static bool SendPAUSE = false;   // True = enviar comando para parar tela
@@ -20,14 +20,14 @@ static int8_t Tela = 0;          // Identificador da tela ativa (0 ou 1)
 static const int PINO_TX = 7;    // Pino de transmissão
 static const int PINO_RX = 6;    // Pino de recepção
 
-// Instância do objeto de controle RF para as telas retráteis
+// Inicialização do objeto de controle RF para as telas retráteis
 static TelaProjecaoRF telaRF(PINO_TX, PINO_RX);
 
-// Endereço RF da Tela 0 (5 bytes em hexadecimal)
+// Endereço RF da Tela 0 
 static const uint8_t ENDERECO_TELA_0[TelaProjecaoRF::TAMANHO_ENDERECO] = {
     0xCD, 0x4E, 0x0A, 0x01, 0x00};
 
-// Endereço RF da Tela 1 (5 bytes em hexadecimal)
+// Endereço RF da Tela 1
 static const uint8_t ENDERECO_TELA_1[TelaProjecaoRF::TAMANHO_ENDERECO] = {
     0xCD, 0x4B, 0xF6, 0x01, 0x00};
 
@@ -53,21 +53,21 @@ void enviarRF()
   {
     if (SendUP)
     {
-      Serial.println(">> Subindo tela... 0");
+      debugInfo(">> Subindo tela... 0");
       telaRF.enviarCima(ENDERECO_TELA_0);
       SendUP = false;
     }
 
     if (SendDOWN)
     {
-      Serial.println(">> Baixando tela... 0");
+      debugInfo(">> Baixando tela... 0");
       telaRF.enviarBaixo(ENDERECO_TELA_0);
       SendDOWN = false;
     }
 
     if (SendPAUSE)
     {
-      Serial.println(">> Parando tela... 0");
+      debugInfo(">> Parando tela... 0");
       telaRF.enviarParar(ENDERECO_TELA_0);
       SendPAUSE = false;
     }
@@ -78,21 +78,21 @@ void enviarRF()
 
     if (SendUP)
     {
-      Serial.println(">> Subindo tela... 1");
+      debugInfo(">> Subindo tela... 1");
       telaRF.enviarCima(ENDERECO_TELA_1);
       SendUP = false;
     }
 
     if (SendDOWN)
     {
-      Serial.println(">> Baixando tela... 1");
+      debugInfo(">> Baixando tela... 1");
       telaRF.enviarBaixo(ENDERECO_TELA_1);
       SendDOWN = false;
     }
 
     if (SendPAUSE)
     {
-      Serial.println(">> Parando tela... 1");
+      debugInfo(">> Parando tela... 1");
       telaRF.enviarParar(ENDERECO_TELA_1);
       SendPAUSE = false;
     }
@@ -111,7 +111,7 @@ void tratarMensagemRecebida(const char *topico, const String &mensagem)
 }
 
 // Processa a mensagem JSON e extrai os comandos de controle
-// Esperado formato: {"telaRetratil": {"UP": bool, "DOWN": bool, "PAUSE": bool, "tela": int}}
+// Esperado formato: {"telaRetratil": {"tela": int, "UP": bool, "DOWN": bool, "PAUSE": bool}}
 void tratarJsonComando(const String &mensagem)
 {
     JsonDocument doc;
@@ -125,10 +125,16 @@ void tratarJsonComando(const String &mensagem)
       debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
       return;
     }
-
+    
     // Verifica se existe o objeto "telaRetratil" no JSON
     if (doc["telaRetratil"].is<JsonObject>())
     {
+      // Extrai o ID da tela selecionada (0 ou 1)
+      if (doc["telaRetratil"]["tela"].is<int8_t>())
+      {
+        Tela = doc["telaRetratil"]["tela"].as<int8_t>();
+        debugInfo("Tela selecionada: " + String(Tela));
+      }
       // Extrai o comando UP (subir) se estiver presente
       if (doc["telaRetratil"]["UP"].is<bool>())
       {
@@ -143,12 +149,6 @@ void tratarJsonComando(const String &mensagem)
       if (doc["telaRetratil"]["PAUSE"].is<bool>())
       {
         SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
-      }
-      // Extrai o ID da tela selecionada (0 ou 1)
-      if (doc["telaRetratil"]["tela"].is<int8_t>())
-      {
-        Tela = doc["telaRetratil"]["tela"].as<int8_t>();
-        Serial.println("Tela selecionada: " + String(Tela));
       }
     }
 
