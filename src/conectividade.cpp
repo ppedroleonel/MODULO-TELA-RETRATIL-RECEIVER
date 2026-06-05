@@ -9,8 +9,7 @@
 // Configuração Wi-Fi: SSID e senha da rede
 ConfigWiFi wifiConfig = {
     WIFI_SSID,
-    WIFI_SENHA
-};
+    WIFI_SENHA};
 
 /* Configuração AWS IoT:
  - Endpoint do broker MQTT AWS
@@ -22,9 +21,9 @@ ConfigAWS awsConfig = {
     "a6t7fzch59vsw-ats.iot.us-east-1.amazonaws.com",
     8883,
     "telaRetratilPublisher",
-    awsCertCA,
-    awsCertCRT,
-    awsCertPrivate
+    AWS_CERT_CA,      // era awsCertCA
+    AWS_CERT_CRT,     // era awsCertCRT
+    AWS_CERT_PRIVATE  // era awsCertPrivate
 };
 
 /* Configuração dos tópicos MQTT:
@@ -32,6 +31,5 @@ ConfigAWS awsConfig = {
   - rec: tópicos para receber, total de topicos 1
   */
 ConfigTopicos topicosConfig = {
-    pub, 1,
-    rec, 1
-};
+    TOPICOS_PUBLICAR, TOTAL_TOPICOS_PUBLICAR,
+    TOPICOS_RECEBER, TOTAL_TOPICOS_RECEBER};

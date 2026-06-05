@@ -104,7 +104,7 @@ void enviarRF()
 void tratarMensagemRecebida(const char *topico, const String &mensagem)
 {
     // Se a mensagem chegou no tópico de recepção correto
-    if (strcmp(topico, rec[0]) == 0)
+    if (strcmp(topico, TOPICOS_RECEBER[0]) == 0)
     {
         tratarJsonComando(mensagem);
     }
