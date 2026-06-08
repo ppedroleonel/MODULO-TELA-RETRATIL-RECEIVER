@@ -17,7 +17,7 @@ static bool SendPAUSE = false;   // True = enviar comando para parar tela
 static int8_t Tela = 0;          // Identificador da tela ativa (0 ou 1)
 
 // Configuração dos pinos para comunicação RF com as telas
-static const int PINO_TX = 7;    // Pino de transmissão
+static const int PINO_TX = 9;    // Pino de transmissão
 static const int PINO_RX = 6;    // Pino de recepção
 
 // Inicialização do objeto de controle RF para as telas retráteis
@@ -104,7 +104,7 @@ void enviarRF()
 void tratarMensagemRecebida(const char *topico, const String &mensagem)
 {
     // Se a mensagem chegou no tópico de recepção correto
-    if (strcmp(topico, TOPICOS_RECEBER[0]) == 0)
+    if (strcmp(topico, rec[0]) == 0)
     {
         tratarJsonComando(mensagem);
     }
