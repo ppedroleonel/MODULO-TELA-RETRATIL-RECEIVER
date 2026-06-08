@@ -21,9 +21,9 @@ ConfigAWS awsConfig = {
     "a6t7fzch59vsw-ats.iot.us-east-1.amazonaws.com",
     8883,
     "telaRetratilPublisher",
-    AWS_CERT_CA,      // era awsCertCA
-    AWS_CERT_CRT,     // era awsCertCRT
-    AWS_CERT_PRIVATE  // era awsCertPrivate
+    awsCertCA,      
+    awsCertCRT,     
+    awsCertPrivate  
 };
 
 /* Configuração dos tópicos MQTT:
@@ -31,5 +31,5 @@ ConfigAWS awsConfig = {
   - rec: tópicos para receber, total de topicos 1
   */
 ConfigTopicos topicosConfig = {
-    TOPICOS_PUBLICAR, TOTAL_TOPICOS_PUBLICAR,
-    TOPICOS_RECEBER, TOTAL_TOPICOS_RECEBER};
+    pub, 1,
+    rec, 1};
