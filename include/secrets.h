@@ -8,13 +8,12 @@ extern const char *WIFI_SSID;
 extern const char *WIFI_SENHA;
 
 
-extern const char AWS_CERT_CA[];
-extern const char AWS_CERT_CRT[];
-extern const char AWS_CERT_PRIVATE[];
-extern const char *TOPICOS_PUBLICAR[];
-extern const char *TOPICOS_RECEBER[];
-extern const int TOTAL_TOPICOS_PUBLICAR;
-extern const int TOTAL_TOPICOS_RECEBER;
+extern const char awsCertCA[];
+extern const char awsCertCRT[];
+extern const char awsCertPrivate[];
+extern const char* pub[];
+extern const char* rec[];
+
 
 //======================================
 // *DEBUG
