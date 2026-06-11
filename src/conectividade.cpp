@@ -5,6 +5,7 @@
 #include <ESP32Connectivity.h>
 #include "conectividade.h"
 #include "secrets.h"
+#include "tratarJsonComando.h"
 
 // Configuração Wi-Fi: SSID e senha da rede
 ConfigWiFi wifiConfig = {
@@ -18,13 +19,12 @@ ConfigWiFi wifiConfig = {
  - Certificados CA, cliente e chave privada (inseridos do arquivo secrets.h)
  */
 ConfigAWS awsConfig = {
-    "a6t7fzch59vsw-ats.iot.us-east-1.amazonaws.com",
+    "a3cxr9ayydc4np-ats.iot.us-east-1.amazonaws.com",
     8883,
-    "telaRetratilPublisher",
-    awsCertCA,      
-    awsCertCRT,     
-    awsCertPrivate  
-};
+    "mario-1234",
+    awsCertCA,
+    awsCertCRT,
+    awsCertPrivate};
 
 /* Configuração dos tópicos MQTT:
   - pub: tópicos para publicar total de topicos 1
@@ -33,3 +33,5 @@ ConfigAWS awsConfig = {
 ConfigTopicos topicosConfig = {
     pub, 1,
     rec, 1};
+
+ESP32Connectivity conexao;

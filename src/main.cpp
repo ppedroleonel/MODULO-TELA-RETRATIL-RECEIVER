@@ -8,14 +8,14 @@
 
 #include <Arduino.h>
 #include <ESP32Connectivity.h>
-#include <Conectividade.h>
+#include "Conectividade.h"
 #include <DebugManager.h>
 #include "secrets.h"
 #include "tratarJsonComando.h"
 #include "callbackManager.h"
 
 // Inicialização do objeto de conectividade MQTT
-ESP32Connectivity conexao;
+ 
 
 void setup()
 {
@@ -32,6 +32,8 @@ void setup()
 
 void loop()
 {
+
+
   conexao.update();
   updateRF();
 }

@@ -15,5 +15,11 @@ void updateRF();
 void tratarJsonComando(const String &mensagem);
 void tratarMensagemRecebida(const char *topico, const String &mensagem);
 void enviarRF();
+void postarBotaoDown();
+void postarBotaoPause();
+void postarBotaoUp();
+
+
+
 
 #endif 

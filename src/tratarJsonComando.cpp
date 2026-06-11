@@ -9,6 +9,7 @@
 #include "conectividade.h"
 #include <TelaProjecaoRF.h>
 #include "secrets.h"
+#include <ezTime.h>
 
 // Variáveis de controle: indicam qual comando de movimento deve ser enviado para a tela
 static bool SendUP = false;      // True = enviar comando para subir tela
@@ -49,13 +50,14 @@ void updateRF()
 void enviarRF()
 {
   // Se Tela 0 está selecionada
-  if (Tela == 0)
+ if (Tela == 0)
   {
     if (SendUP)
     {
       debugInfo(">> Subindo tela... 0");
       telaRF.enviarCima(ENDERECO_TELA_0);
       SendUP = false;
+      postarBotaoUp();
     }
 
     if (SendDOWN)
@@ -63,6 +65,7 @@ void enviarRF()
       debugInfo(">> Baixando tela... 0");
       telaRF.enviarBaixo(ENDERECO_TELA_0);
       SendDOWN = false;
+      postarBotaoDown();
     }
 
     if (SendPAUSE)
@@ -70,6 +73,7 @@ void enviarRF()
       debugInfo(">> Parando tela... 0");
       telaRF.enviarParar(ENDERECO_TELA_0);
       SendPAUSE = false;
+      postarBotaoPause();
     }
   }
   // Se Tela 1 está selecionada
@@ -81,6 +85,7 @@ void enviarRF()
       debugInfo(">> Subindo tela... 1");
       telaRF.enviarCima(ENDERECO_TELA_1);
       SendUP = false;
+      postarBotaoUp();
     }
 
     if (SendDOWN)
@@ -88,6 +93,7 @@ void enviarRF()
       debugInfo(">> Baixando tela... 1");
       telaRF.enviarBaixo(ENDERECO_TELA_1);
       SendDOWN = false;
+      postarBotaoDown();
     }
 
     if (SendPAUSE)
@@ -95,6 +101,7 @@ void enviarRF()
       debugInfo(">> Parando tela... 1");
       telaRF.enviarParar(ENDERECO_TELA_1);
       SendPAUSE = false;
+      postarBotaoPause();
     }
   }
 }
@@ -154,4 +161,66 @@ void tratarJsonComando(const String &mensagem)
 
     // Envia o comando via RF para a tela selecionada
     enviarRF();
+}
+
+void postarBotaoDown()
+{
+    Timezone carimbo;
+
+    waitForSync();
+
+    carimbo.setLocation("America/Sao_Paulo");
+    setInterval(60);
+
+    JsonDocument doc;
+
+    doc["telaRetratil"]["tela"] = Tela;
+    doc["telaRetratil"]["info"] = "Tela Descendo";
+    doc["telaRetratil"]["timestamp"] = carimbo.now();
+
+    String texto;
+    serializeJson(doc, texto);
+    conexao.publicar(0, texto.c_str());
+}
+
+
+void postarBotaoUp()
+{
+    Timezone carimbo;
+
+    waitForSync();
+
+    carimbo.setLocation("America/Sao_Paulo");
+    setInterval(60);
+
+    JsonDocument doc;
+
+    doc["telaRetratil"]["tela"] = Tela;
+    doc["telaRetratil"]["info"] = "Tela subindo";
+    doc["telaRetratil"]["timestamp"] = carimbo.now();
+
+    String texto;
+    serializeJson(doc, texto);
+    conexao.publicar(0, texto.c_str());
+}
+
+void postarBotaoPause()
+{
+    Timezone carimbo;
+
+    waitForSync();
+
+    carimbo.setLocation("America/Sao_Paulo");
+    setInterval(60);
+
+    JsonDocument doc;
+    
+    doc["telaRetratil"]["tela"] = Tela;
+    doc["telaRetratil"]["info"] = "Tela Pausada";
+    doc["telaRetratil"]["timestamp"] = carimbo.now();
+
+
+    String texto;
+    serializeJson(doc, texto);
+    conexao.publicar(0, texto.c_str());
 }

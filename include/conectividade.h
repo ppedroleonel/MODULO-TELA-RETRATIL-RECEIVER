@@ -10,5 +10,6 @@
 extern ConfigWiFi wifiConfig;
 extern ConfigAWS awsConfig;
 extern ConfigTopicos topicosConfig;
+extern ESP32Connectivity conexao;
 
 #endif
