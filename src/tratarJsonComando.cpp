@@ -28,7 +28,7 @@ static const uint8_t ENDERECO_TELA_0[TelaProjecaoRF::TAMANHO_ENDERECO] = {
 
 // Endereço RF da Tela 1
 static const uint8_t ENDERECO_TELA_1[TelaProjecaoRF::TAMANHO_ENDERECO] = {
-    0xCD, 0x4B, 0xF6, 0x01, 0x00};
+    0xCD, 0x4B, 0xF6, 0x01, 0x00}; //CD 4B F6 01 00
 
 // Inicializa o módulo RF e configura a inversão de sinal (se necessário)
 void inicializarRF()
