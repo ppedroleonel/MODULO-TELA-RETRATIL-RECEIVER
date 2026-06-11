@@ -3,7 +3,7 @@
  *  Descrição: Neste módulo de receiver, o ESP32 recebe comandos JSON via MQTT e converte esses comandos em ações RF para controlar as telas retráteis, encaminhando UP, DOWN e PAUSE conforme o comando recebido.
  *  Projeto: Módulo de controle de tela retrátil via AWS IoT e RF
  *  Data: 04/06/2026
- *  Versão: 1.1.1
+ *  Versão: 2.0.0
  *  */
 
 #include <Arduino.h>

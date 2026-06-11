@@ -12,19 +12,17 @@
 #include <ezTime.h>
 
 // Variáveis de controle: indicam qual comando de movimento deve ser enviado para a tela
-static bool SendUP = false;      // True = enviar comando para subir tela
-static bool SendDOWN = false;    // True = enviar comando para baixar tela
-static bool SendPAUSE = false;   // True = enviar comando para parar tela
-static int8_t Tela = 0;          // Identificador da tela ativa (0 ou 1)
+static int8_t message = 0; // Comando recebido do JSON (0: nenhum, 1: UP, 2: DOWN, 3: PAUSE)
+static int8_t Tela = 0;    // Identificador da tela ativa (0 ou 1)
 
 // Configuração dos pinos para comunicação RF com as telas
-static const int PINO_TX = 9;    // Pino de transmissão
-static const int PINO_RX = 6;    // Pino de recepção
+static const int PINO_TX = 9; // Pino de transmissão
+static const int PINO_RX = 6; // Pino de recepção
 
 // Inicialização do objeto de controle RF para as telas retráteis
 static TelaProjecaoRF telaRF(PINO_TX, PINO_RX);
 
-// Endereço RF da Tela 0 
+// Endereço RF da Tela 0
 static const uint8_t ENDERECO_TELA_0[TelaProjecaoRF::TAMANHO_ENDERECO] = {
     0xCD, 0x4E, 0x0A, 0x01, 0x00};
 
@@ -50,58 +48,53 @@ void updateRF()
 void enviarRF()
 {
   // Se Tela 0 está selecionada
- if (Tela == 0)
+  if (Tela == 0)
   {
-    if (SendUP)
+    switch (message)
     {
+    case 0:
       debugInfo(">> Subindo tela... 0");
       telaRF.enviarCima(ENDERECO_TELA_0);
-      SendUP = false;
       postarBotaoUp();
-    }
-
-    if (SendDOWN)
-    {
+      break;
+    case 1:
       debugInfo(">> Baixando tela... 0");
       telaRF.enviarBaixo(ENDERECO_TELA_0);
-      SendDOWN = false;
       postarBotaoDown();
-    }
+      break;
 
-    if (SendPAUSE)
-    {
+    case 2:
       debugInfo(">> Parando tela... 0");
       telaRF.enviarParar(ENDERECO_TELA_0);
-      SendPAUSE = false;
       postarBotaoPause();
+    default:
+      debugErro("Comando desconhecido recebido: " + String(message));
+      break;
     }
   }
   // Se Tela 1 está selecionada
   else if (Tela == 1)
   {
-
-    if (SendUP)
+    switch (message)
     {
+    case 0:
       debugInfo(">> Subindo tela... 1");
       telaRF.enviarCima(ENDERECO_TELA_1);
-      SendUP = false;
       postarBotaoUp();
-    }
-
-    if (SendDOWN)
-    {
+      break;
+    case 1:
       debugInfo(">> Baixando tela... 1");
       telaRF.enviarBaixo(ENDERECO_TELA_1);
-      SendDOWN = false;
       postarBotaoDown();
-    }
+      break;
 
-    if (SendPAUSE)
-    {
+    case 2:
       debugInfo(">> Parando tela... 1");
       telaRF.enviarParar(ENDERECO_TELA_1);
-      SendPAUSE = false;
       postarBotaoPause();
+    default:
+      debugErro("Comando desconhecido recebido: " + String(message));
+      break;
     }
   }
 }
@@ -110,117 +103,105 @@ void enviarRF()
 // Verifica se o tópico é o esperado e processa a mensagem como comando JSON
 void tratarMensagemRecebida(const char *topico, const String &mensagem)
 {
-    // Se a mensagem chegou no tópico de recepção correto
-    if (strcmp(topico, rec[0]) == 0)
-    {
-        tratarJsonComando(mensagem);
-    }
+  // Se a mensagem chegou no tópico de recepção correto
+  if (strcmp(topico, rec[0]) == 0)
+  {
+    tratarJsonComando(mensagem);
+  }
 }
 
 // Processa a mensagem JSON e extrai os comandos de controle
 // Esperado formato: {"telaRetratil": {"tela": int, "UP": bool, "DOWN": bool, "PAUSE": bool}}
 void tratarJsonComando(const String &mensagem)
 {
-    JsonDocument doc;
+  JsonDocument doc;
 
-    // Desserializa a string JSON para um objeto
-    DeserializationError erro = deserializeJson(doc, mensagem);
+  // Desserializa a string JSON para um objeto
+  DeserializationError erro = deserializeJson(doc, mensagem);
 
-    // Se houve erro na desserialização, registra e retorna
-    if (erro)
+  // Se houve erro na desserialização, registra e retorna
+  if (erro)
+  {
+    debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
+    return;
+  }
+
+  // Verifica se existe o objeto "telaRetratil" no JSON
+  if (doc["telaRetratil"].is<JsonObject>())
+  {
+    // Extrai o ID da tela selecionada (0 ou 1)
+    if (doc["telaRetratil"]["tela"].is<int8_t>())
     {
-      debugErro("Erro ao desserializar o JSON: " + String(erro.c_str()));
-      return;
+      Tela = doc["telaRetratil"]["tela"].as<int8_t>();
+      debugInfo("Tela selecionada: " + String(Tela));
     }
-    
-    // Verifica se existe o objeto "telaRetratil" no JSON
-    if (doc["telaRetratil"].is<JsonObject>())
+    // Extrai o comando UP (subir) se estiver presente
+    if (doc["telaRetratil"]["comando"].is<int8_t>())
     {
-      // Extrai o ID da tela selecionada (0 ou 1)
-      if (doc["telaRetratil"]["tela"].is<int8_t>())
-      {
-        Tela = doc["telaRetratil"]["tela"].as<int8_t>();
-        debugInfo("Tela selecionada: " + String(Tela));
-      }
-      // Extrai o comando UP (subir) se estiver presente
-      if (doc["telaRetratil"]["UP"].is<bool>())
-      {
-        SendUP = doc["telaRetratil"]["UP"].as<bool>();
-      }
-      // Extrai o comando DOWN (baixar) se estiver presente
-      if (doc["telaRetratil"]["DOWN"].is<bool>())
-      {
-        SendDOWN = doc["telaRetratil"]["DOWN"].as<bool>();
-      }
-      // Extrai o comando PAUSE (parar) se estiver presente
-      if (doc["telaRetratil"]["PAUSE"].is<bool>())
-      {
-        SendPAUSE = doc["telaRetratil"]["PAUSE"].as<bool>();
-      }
+      message = doc["telaRetratil"]["comando"].as<int8_t>();
     }
+  }
 
-    // Envia o comando via RF para a tela selecionada
-    enviarRF();
+  // Envia o comando via RF para a tela selecionada
+  enviarRF();
 }
 
 void postarBotaoDown()
 {
-    Timezone carimbo;
+  Timezone carimbo;
 
-    waitForSync();
+  waitForSync();
 
-    carimbo.setLocation("America/Sao_Paulo");
-    setInterval(60);
+  carimbo.setLocation("America/Sao_Paulo");
+  setInterval(60);
 
-    JsonDocument doc;
+  JsonDocument doc;
 
-    doc["telaRetratil"]["tela"] = Tela;
-    doc["telaRetratil"]["info"] = "Tela Descendo";
-    doc["telaRetratil"]["timestamp"] = carimbo.now();
+  doc["telaRetratil"]["tela"] = Tela;
+  doc["telaRetratil"]["info"] = "Tela Descendo";
+  doc["telaRetratil"]["timestamp"] = carimbo.now();
 
-    String texto;
-    serializeJson(doc, texto);
-    conexao.publicar(0, texto.c_str());
+  String texto;
+  serializeJson(doc, texto);
+  conexao.publicar(0, texto.c_str());
 }
-
 
 void postarBotaoUp()
 {
-    Timezone carimbo;
+  Timezone carimbo;
 
-    waitForSync();
+  waitForSync();
 
-    carimbo.setLocation("America/Sao_Paulo");
-    setInterval(60);
+  carimbo.setLocation("America/Sao_Paulo");
+  setInterval(60);
 
-    JsonDocument doc;
+  JsonDocument doc;
 
-    doc["telaRetratil"]["tela"] = Tela;
-    doc["telaRetratil"]["info"] = "Tela subindo";
-    doc["telaRetratil"]["timestamp"] = carimbo.now();
+  doc["telaRetratil"]["tela"] = Tela;
+  doc["telaRetratil"]["info"] = "Tela subindo";
+  doc["telaRetratil"]["timestamp"] = carimbo.now();
 
-    String texto;
-    serializeJson(doc, texto);
-    conexao.publicar(0, texto.c_str());
+  String texto;
+  serializeJson(doc, texto);
+  conexao.publicar(0, texto.c_str());
 }
 
 void postarBotaoPause()
 {
-    Timezone carimbo;
+  Timezone carimbo;
 
-    waitForSync();
+  waitForSync();
 
-    carimbo.setLocation("America/Sao_Paulo");
-    setInterval(60);
+  carimbo.setLocation("America/Sao_Paulo");
+  setInterval(60);
 
-    JsonDocument doc;
-    
-    doc["telaRetratil"]["tela"] = Tela;
-    doc["telaRetratil"]["info"] = "Tela Pausada";
-    doc["telaRetratil"]["timestamp"] = carimbo.now();
+  JsonDocument doc;
 
+  doc["telaRetratil"]["tela"] = Tela;
+  doc["telaRetratil"]["info"] = "Tela Pausada";
+  doc["telaRetratil"]["timestamp"] = carimbo.now();
 
-    String texto;
-    serializeJson(doc, texto);
-    conexao.publicar(0, texto.c_str());
+  String texto;
+  serializeJson(doc, texto);
+  conexao.publicar(0, texto.c_str());
 }
