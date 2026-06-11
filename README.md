@@ -86,11 +86,9 @@ Publique no tópico configurado um objeto como este:
 
 ```json
 {
-  "telaRetratil": {
+  "telaRetratil" : {
     "tela": 0,
-    "UP": false,
-    "DOWN": true,
-    "PAUSE": false
+    "comando": 1
   }
 }
 ```
@@ -98,11 +96,7 @@ Publique no tópico configurado um objeto como este:
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
 | `tela` | `int` | `0` para tela 1, `1` para tela 2 |
-| `UP` | `bool` | Comando de subida |
-| `DOWN` | `bool` | Comando de descida |
-| `PAUSE` | `bool` | Comando de parada |
-
-> Apenas **um** movimento é executado por mensagem. Prioridade: `UP` → `DOWN` → `PAUSE`.
+| `comando` | `int` | `0` para subir, `1` para descer, `2` para tela pausar|
 
 ---
 
