@@ -142,10 +142,10 @@ Defina `DEBUG_NIVEL_INICIAL` em `secrets.h`:
 
 | Nome | GitHub |
 |------|--------|
-| Luigi Reginato | [@luigireginato](https://github.com/luigi-reginato) |
-| Pedro Leonel | [@pedroleonel](https://github.com/ppedroleonel) |
-| Leonardo Ferrarese | [@leonardoferrarese](https://github.com/O-LJ) |
-| Lais Rodrigues | [@laisrodrigues](https://github.com/LaisSevilhano90) |
+| Luigi Reginato | [@luigi-reginato](https://github.com/luigi-reginato) |
+| Pedro Leonel | [@ppedroleonel](https://github.com/ppedroleonel) |
+| Leonardo Ferrarese | [@o-lj](https://github.com/O-LJ) |
+| Lais Rodrigues | [@LaisSevilhano90](https://github.com/LaisSevilhano90) |
 
 
 ---
